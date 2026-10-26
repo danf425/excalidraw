@@ -13,9 +13,45 @@ import { findShapeByKey } from "../components/Tools";
 
 import { API } from "./helpers/api";
 import { Pointer } from "./helpers/ui";
-import { act, fireEvent, GlobalTestState, render } from "./test-utils";
+import { act, fireEvent, GlobalTestState, render, waitFor } from "./test-utils";
 
 import type { AppClassProperties, ExcalidrawImperativeAPI } from "../types";
+
+describe("main toolbar", () => {
+  it.each(["desktop", "tablet"] as const)(
+    "places Eraser after Selection on %s without changing tool shortcuts",
+    async (formFactor) => {
+      const { container } = await render(
+        <Excalidraw UIOptions={{ getFormFactor: () => formFactor }} />,
+      );
+      fireEvent.resize(window);
+      await waitFor(() =>
+        expect(window.h.app.editorInterface.formFactor).toBe(formFactor),
+      );
+
+      const toolButtons = container.querySelectorAll(
+        '.App-toolbar [data-testid^="toolbar-"]:not([data-testid="toolbar-lock"])',
+      );
+      expect(
+        Array.from(toolButtons, (button) => button.getAttribute("data-testid")),
+      ).toEqual([
+        "toolbar-hand",
+        "toolbar-selection",
+        "toolbar-eraser",
+        "toolbar-rectangle",
+        "toolbar-diamond",
+        "toolbar-ellipse",
+        "toolbar-arrow",
+        "toolbar-line",
+        "toolbar-freedraw",
+        "toolbar-text",
+        "toolbar-image",
+      ]);
+      expect(findShapeByKey("2", window.h.app)).toBe("rectangle");
+      expect(findShapeByKey("0", window.h.app)).toBe("eraser");
+    },
+  );
+});
 
 describe("setActiveTool()", () => {
   const h = window.h;
